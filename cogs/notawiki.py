@@ -93,7 +93,7 @@ def factionUpgradeSearch(faction):
     return format(screen, factionUpgrade)
 
 
-class NotaWiki:
+class Notawiki(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -169,4 +169,4 @@ class NotaWiki:
 
 ####
 def setup(bot):
-    bot.add_cog(NotaWiki(bot))
+    bot.add_cog(Notawiki(bot))

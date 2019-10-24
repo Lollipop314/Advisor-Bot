@@ -7,9 +7,10 @@ import sys
 import traceback
 
 
-description = "Realm Grinder Advisor Bot written in Python by Alright#2304. Uses . prefix, mentioning the bot will also work."
+description = "Realm Grinder Advisor Bot written in Python by Alright#2304. Uses . prefix, mentioning the bot will " \
+              "also work.\n\n**Github**: https://github.com/Alrightsc/Advisor-Bot "
 
-extensions = ['cogs.notawiki']
+initial_exts = ["cogs.notawiki"]
 
 def getPrefix(bot, msg):
     prefixes = ["."]
@@ -17,9 +18,9 @@ def getPrefix(bot, msg):
 
 class AdvisorBot(commands.AutoShardedBot):
     def __init__(self):
-        super().__init__(command_prefix=getPrefix, description=description, help_attrs=dict(hidden=True))
+        super().__init__(command_prefix=getPrefix, help_command=None)
 
-        for extension in extensions:
+        for extension in initial_exts:
             try:
                 self.load_extension(extension)
             except Exception:
