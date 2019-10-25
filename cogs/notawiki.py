@@ -134,8 +134,7 @@ def factionChallengeSearch(faction):
     # Then we run the list through a formatter, and that becomes our new list
     return format(screen, factionUpgrade)
 
-
-class NotaWiki(commands.Cog):
+class Notawiki(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -273,4 +272,4 @@ class NotaWiki(commands.Cog):
 
 ####
 def setup(bot):
-    bot.add_cog(NotaWiki(bot))
+    bot.add_cog(Notawiki(bot))
