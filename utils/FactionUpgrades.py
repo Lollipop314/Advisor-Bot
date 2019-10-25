@@ -253,6 +253,18 @@ def getFactionAbbr(faction):
         return checks, None, None
 
 
+def getFactionNameFull(faction):
+    checks = False
+
+    for key, value in factionAbbrDict.items():
+        if faction in value:
+            checks = True
+            return key
+
+    if not checks:
+        return None
+
+
 def getFactionUpgradeName(faction):
     # Checks the 3-letter abbreviation, returns the title of upgrade if found
     if faction in factionUpgradesDict:

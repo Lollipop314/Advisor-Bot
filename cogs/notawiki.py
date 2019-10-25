@@ -7,12 +7,14 @@ import datetime
 import discord
 import requests
 
+import re
+
 badSubstrings = ["", "Cost", "Effect", "Formula", "Mercenary Template", "Requirement", "Gem Grinder and Dragon's "
                                                                                        "Breath Formula"]
 
 # I thought this was a nicer way to handle aliases; makes adding them easier (just add it to the list)
 alias = {
-    "upgrade": ["upg", "up", "u"]
+    "upgrade": ["upg", "up", "u"],
     "challenge": ["ch", "c"]
 }
 
@@ -59,6 +61,11 @@ def format(lst: list, factionUpgrade):
 
         lst.append(f'Current Time (UTC): {utc_dt.strftime("%H:%M")}' + dj8)
 
+    # A little less for the Druid Challenges reward - remove picture from lst
+    if factionUpgrade == "Primal Balance":
+        lst.pop(5)
+
+    print(lst)
     return lst
 
 
@@ -95,44 +102,41 @@ def factionUpgradeSearch(faction):
                     screen.append(line.text)
             break
 
+    print(screen)
     # Then we run the list through a formatter, and that becomes our new list
     return format(screen, factionUpgrade)
 
 def factionChallengeSearch(faction):
-    # Getting the Upgrade from FactionUpgrades
-    factionChallenge = FactionUpgrades.getFactionChallengeName(faction)
-
     # Retrieving data using Request and converting to BeautifulSoup object
-    nawLink = "http://musicfamily.org/realm/FactionUpgrades/"
+    nawLink = "http://musicfamily.org/realm/Challenges/"
     content = requests.get(nawLink)
     soup = BeautifulSoup(content.content, 'html5lib')
 
-    # Searching tags starting with <p>, which upgrades' lines on NaW begin with
-    p = soup.find_all('p')
+    # Searching tags starting with <area>, which challenges' lines on NaW begin with
+    p = soup.find_all('area')
 
     # Our upgrade info will be added here
     screen = []
 
+    find = False
     # Iterating through p, finding until upgrade matches
     for tag in p:
-        # space is necessary because there is always one after image
-        if tag.get_text() == " " + factionUpgrade:
-            # if True, adds full line so we can retrieve the image through our formatting function
-            screen.append(str(tag))
+        if faction in tag['href']:
+            temp = tag['research'].split("</p>") 
+            # The following is to convert tag['research'] into a format that the format() function will work with
+            temp = [re.sub("<p>|<b>|</b>|\n|\t", "", s) for s in temp]
+            temp.insert(0, temp[1])
+            temp.pop(2)
+            screen = screen + temp
+            find = True
 
-            # Since we return true, we search using find_all_next function, and then break it there since we don't
-            # need to iterate anymore at the end
-            for line in tag.find_all_next(['p','br','hr','div']):
-                # Not-a-Wiki stops lines after a break, a new line, or div, so we know the upgrade info stop there
-                if str(line) == "<br/>" or str(line) == "<hr/>" or str(line).startswith("<div"):
-                    break
-                else:
-                    # Otherwise, add the lines of upgrade to the list - line.text returns the text without HTML tags
-                    screen.append(line.text)
-            break
+    if not find:
+        raise Exception("Invalid Input")
 
     # Then we run the list through a formatter, and that becomes our new list
-    return format(screen, factionUpgrade)
+    challengeName = screen[0].split("> ")[1]
+    print(challengeName)
+    return format(screen, challengeName)
 
 class Notawiki(commands.Cog):
     def __init__(self, bot):
@@ -161,7 +165,7 @@ class Notawiki(commands.Cog):
         # if number is added as an input, we automatically assume the full term, i.e. "Fairy 7"
         elif number is not None:
             # Some people just like to watch the world burn
-            if number < 0 or number > 12:
+            if int(number) < 0 or int(number) > 12:
                 raise Exception('Invalid Input')
 
             arg2 = arg.lower()
@@ -217,23 +221,24 @@ class Notawiki(commands.Cog):
         # Help panel in case of no input
         if arg is None and number is None:
             description = "**.challenge <faction>**\n**Aliases: **" + ', '.join(alias["challenge"]) + "\n\nRetrieves a Faction Challenge information " \
-                          "directly from Not-a-Wiki. <faction> inputs can be using two-letter Faction abbreviation with " \
+                          "directly from Not-a-Wiki. <faction> inputs can be using two-letter Faction abbreviation (like for merc templates) with " \
                           "challenge number, or full Faction name with a challenge number.\n\nExamples: Fairy 3, DG6 "
             embed = discord.Embed(title=":recycle:  Challenge", description=description, colour=discord.Colour.dark_gold())
             return await ctx.send(embed=embed)
 
         # Checking if input returns an abbreviation faction i.e. FR7 or MK11, also accepts lowercase inputs
-        if arg[2].isdigit() and number is None:
+        if arg[2].isdigit() or arg[2] in ["R", "r"] and number is None:
             faction = arg.upper()
             argColor = faction[0:2]
             color = FactionUpgrades.getFactionColour(argColor)
+            # No huge dictionary this time around
+            faction2 = FactionUpgrades.getFactionNameFull(argColor)
+
+            faction = faction2 + faction[0] + "C" + faction[2:] 
 
         # if number is added as an input, we automatically assume the full term, i.e. "Fairy 7"
         elif number is not None:
-            # Uhh this bit is going to need something different
-            if number < 0 or number > 7:
-                raise Exception('Invalid Input')
-
+            # Number checker has been moved to factionChallengeSearch()
             arg2 = arg.lower()
             arg2 = arg2.capitalize()
             checks, fac, color = FactionUpgrades.getFactionAbbr(arg2)
@@ -243,7 +248,7 @@ class Notawiki(commands.Cog):
             if checks is False:
                 raise Exception('Invalid Input')
             else:
-                faction = fac + number
+                faction = arg2 + arg2[0] + "C" + str(number).upper()
 
         # if inputs match neither above, raise Exception
         else:
@@ -251,24 +256,38 @@ class Notawiki(commands.Cog):
 
         async with ctx.channel.typing():
             # We get our list through Not-a-Wiki Beautiful Soup search
+            # factionChallengeSearch takes parameters like "FairyFC1" or "FacelessFC1" (note the similar last 3 characters)
             data = factionChallengeSearch(faction)
 
-            # Embed things, using the list retrieved from factionUpgradeSearch
+            ignore = 4
+
+            # Embed things, using the list retrieved from factionChallengeSearch
             thumbnail = data[0]
-            title = f'**{data[1]}**'
+            # Spell rewards need special formatting
+            if faction[-1:] == "R": 
+                title = f'**{data[1]}**'
+                ignore = 3
+            else:
+                title = f'**{data[2]} : {data[1]}**'
             embed = discord.Embed(title=title, colour=discord.Colour(color), timestamp=datetime.datetime.utcnow())
             embed.set_footer(text="http://musicfamily.org/realm/FactionUpgrades/",
                              icon_url="http://musicfamily.org/realm/Factions/picks/RealmGrinderGameRL.png")
             embed.set_thumbnail(url=thumbnail)
 
-            # Since the first two lines always are guaranteed to be an url and name of Faction upgrade, we ignore
-            # them, and then start processing adding new fields for each line
-            for line in data[2:]:
+            # Ignore the first 4 fields and create the rest
+            for line in data[ignore:]:
                 newline = line.split(": ")
                 first = f'**{newline[0]}**'
                 embed.add_field(name=first, value=newline[1], inline=True)
 
         await ctx.send(embed=embed)
+
+    @challenge.error
+    async def challenge_error(self, ctx, error):
+        if isinstance(error, Exception):
+            title = "Error"
+            embed = discord.Embed(title=title, description="Error")
+            return await ctx.send(embed=embed)
 
 ####
 def setup(bot):
