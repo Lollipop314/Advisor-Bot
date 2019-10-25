@@ -99,7 +99,7 @@ class Notawiki(commands.Cog):
 
     @commands.command(aliases=["upg", "u", "up"])
     @commands.guild_only()
-    async def upgrade(self, ctx, arg=None, number=None):
+    async def upgrade(self, ctx, arg = None, number = None):
         """Searches a Faction Upgrade from Not-a-Wiki"""
         global color
         global faction
@@ -120,7 +120,7 @@ class Notawiki(commands.Cog):
         # if number is added as an input, we automatically assume the full term, i.e. "Fairy 7"
         elif number is not None:
             # Some people just like to watch the world burn
-            if number < 0 or number > 12:
+            if int(number) < 0 or int(number) > 12:
                 raise Exception('Invalid Input')
 
             arg2 = arg.lower()

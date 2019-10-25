@@ -96,41 +96,6 @@ class Owner(commands.Cog):
         else:
             return await ctx.send(discord.Role.id)
 
-    @commands.command(name='eval', hidden=True)
-    @commands.is_owner()
-    async def eval_fn(self, ctx, *, cmd):
-        """Evaluates input.
-
-        Input is interpreted as newline seperated statements.
-        If the last statement is an expression, that is the return value.
-        """
-        fn_name = "_eval_expr"
-
-        cmd = cmd.strip("` ")
-
-        # add a layer of indentation
-        cmd = "\n".join(f"    {i}" for i in cmd.splitlines())
-
-        # wrap in async def body
-        body = f"async def {fn_name}():\n{cmd}"
-
-        parsed = ast.parse(body)
-        body = parsed.body[0].body
-
-        insert_returns(body)
-
-        env = {
-            'bot': ctx.bot,
-            'discord': discord,
-            'commands': commands,
-            'ctx': ctx,
-            '__import__': __import__
-        }
-        exec(compile(parsed, filename="<ast>", mode="exec"), env)
-
-        result = (await eval(f"{fn_name}()", env))
-        await ctx.send(result)
-
     def get_bot_uptime(self, *, brief=False):
         now = datetime.datetime.utcnow()
         delta = now - self.bot.uptime
@@ -154,22 +119,6 @@ class Owner(commands.Cog):
     @commands.is_owner()
     async def uptime(self, ctx):
         await ctx.send(f':alarm_clock: Uptime: {self.get_bot_uptime()}')
-
-    @commands.command(name='perms', aliases=['perms_for', 'permissions'])
-    @commands.is_owner()
-    async def check_permissions(self, ctx, *, member: discord.Member = None):
-        """A simple command which checks a members Guild Permissions.
-        If member is not provided, the author will be checked."""
-
-        if not member:
-            member = ctx.author
-
-        perms = '\n'.join(perm for perm, value in member.guild_permissions if value)
-
-        embed = discord.Embed(title='Permissions for:', description=ctx.guild.name, colour=member.colour)
-        embed.set_author(icon_url=member.avatar_url, name=str(member))
-        embed.add_field(name='\uFEFF', value=perms)
-        await ctx.send(content=None, embed=embed)
 
 def setup(bot):
     bot.add_cog(Owner(bot))
