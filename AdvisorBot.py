@@ -10,7 +10,8 @@ import traceback
 description = "Realm Grinder Advisor Bot written in Python by Alright#2304. Uses . prefix, mentioning the bot will " \
               "also work.\n\n**Github**: https://github.com/Alrightsc/Advisor-Bot "
 
-initial_exts = ["cogs.notawiki"]
+initial_exts = ["cogs.notawiki",
+                "cogs.owner"]
 
 def getPrefix(bot, msg):
     prefixes = ["."]
