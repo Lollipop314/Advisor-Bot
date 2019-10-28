@@ -31,7 +31,7 @@ class AdvisorBot(commands.AutoShardedBot):
     async def on_ready(self):
         if not hasattr(self, 'uptime'):
             self.uptime = datetime.datetime.utcnow()
-        await self.change_presence(status=discord.Status.online, activity=discord.Game('Helping grinders grind more'))
+        await self.change_presence(status=discord.Status.online)
 
         print(f'Online and running. {self.user} (ID: {self.user.id})')
 

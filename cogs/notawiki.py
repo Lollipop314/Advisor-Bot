@@ -8,7 +8,7 @@ import discord
 import requests
 
 badSubstrings = ["", "Cost", "Effect", "Formula", "Mercenary Template", "Requirement", "Gem Grinder and Dragon's "
-                                                                                       "Breath Formula"]
+                                                                                       "Breath Formula", 'Formula: ']
 
 def format(lst: list, factionUpgrade):
     """Formats the list retrieved from BeautifulSoup"""
@@ -104,7 +104,7 @@ class Notawiki(commands.Cog):
         global color
         global faction
 
-        if arg is None and number is None:
+        if (arg is None and number is None) or (arg == "help" and number is None):
             description = "**.upgrade <faction>**\n**Aliases: **upg, up, u\n\nRetrieves a Faction upgrade information " \
                           "directly from Not-a-Wiki. <faction> inputs can be using two-letter Mercenary Template with " \
                           "upgrade number, or full Faction name with an upgrade number.\n\nExamples: Fairy 7, MK10 "
@@ -162,8 +162,9 @@ class Notawiki(commands.Cog):
     @upgrade.error
     async def upgrade_error(self, ctx, error):
         if isinstance(error, Exception):
-            title = "Error"
-            embed = discord.Embed(title=title, description="Error")
+            title = " :exclamation:  Command Error!"
+            description="The parameters you used are not found in the list. Please try again."
+            embed = discord.Embed(title=title, description=description, colour=discord.Colour.red())
             return await ctx.send(embed=embed)
 
 
