@@ -229,6 +229,15 @@ factionUpgradesDict = {
     "MK12": "Reality Marble"
 }
 
+researchBranchesdict = {
+    "Spellcraft": "http://musicfamily.org/realm/Spellcraft/",
+    "Craftsmanship": "http://musicfamily.org/realm/Craftsmanship/",
+    "Divine": "http://musicfamily.org/realm/Divine/",
+    "Economics": "http://musicfamily.org/realm/Economics/",
+    "Alchemy": "http://musicfamily.org/realm/Alchemy/",
+    "Warfare": "http://musicfamily.org/realm/Warfare/"
+}
+
 
 def getFactionColour(abbr):
     # Gets the color from dictionary if value matches abbreviation
@@ -257,3 +266,15 @@ def getFactionUpgradeName(faction):
     # Checks the 3-letter abbreviation, returns the title of upgrade if found
     if faction in factionUpgradesDict:
         return factionUpgradesDict[faction]
+
+
+def getFactionNameFull(faction):
+    checks = False
+
+    for key, value in factionAbbrDict.items():
+        if faction in value:
+            checks = True
+            return key
+
+    if not checks:
+        return None

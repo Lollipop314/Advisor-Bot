@@ -3,12 +3,18 @@ from utils import FactionUpgrades
 from bs4 import BeautifulSoup
 from urlextract import URLExtract
 
+import re
 import datetime
 import discord
 import requests
 
 badSubstrings = ["", "Cost", "Effect", "Formula", "Mercenary Template", "Requirement", "Gem Grinder and Dragon's "
                                                                                        "Breath Formula", 'Formula: ']
+
+alias = {
+    "upgrade": ["upg", "up", "u"],
+    "challenge": ["ch", "c"]
+}
 
 def format(lst: list, factionUpgrade):
     """Formats the list retrieved from BeautifulSoup"""
@@ -17,8 +23,6 @@ def format(lst: list, factionUpgrade):
     url = lst[0]
     extractor = URLExtract()
     newUrl = extractor.find_urls(url)
-
-    # We remove the line from list and replace with the new url
     lst.remove(url)
     lst.insert(0, newUrl[0])
 
@@ -53,6 +57,12 @@ def format(lst: list, factionUpgrade):
 
         lst.append(f'Current Time (UTC): {utc_dt.strftime("%H:%M")}' + dj8)
 
+    # A little less for the Druid Challenges reward - remove picture from lst
+    if factionUpgrade == "Primal Balance":
+        lst.pop(5)
+
+    print(lst)
+
     return lst
 
 
@@ -80,7 +90,7 @@ def factionUpgradeSearch(faction):
 
             # Since we return true, we search using find_all_next function, and then break it there since we don't
             # need to iterate anymore at the end
-            for line in tag.find_all_next(['p','br','hr','div']):
+            for line in tag.find_all_next(['p', 'br', 'hr', 'div']):
                 # Not-a-Wiki stops lines after a break, a new line, or div, so we know the upgrade info stop there
                 if str(line) == "<br/>" or str(line) == "<hr/>" or str(line).startswith("<div"):
                     break
@@ -92,23 +102,77 @@ def factionUpgradeSearch(faction):
     # Then we run the list through a formatter, and that becomes our new list
     return format(screen, factionUpgrade)
 
+def factionChallengeSearch(faction):
+    # Retrieving data using Request and converting to BeautifulSoup object
+    nawLink = "http://musicfamily.org/realm/Challenges/"
+    content = requests.get(nawLink)
+    soup = BeautifulSoup(content.content, 'html5lib')
+
+    # Searching tags starting with <area>, which challenges' lines on NaW begin with
+    p = soup.find_all('area')
+
+    # Our upgrade info will be added here
+    screen = []
+
+    find = False
+    # Iterating through p, finding until upgrade matches
+    for tag in p:
+        if faction in tag['href']:
+            temp = tag['research'].split("</p>")
+            # The following is to convert tag['research'] into a format that the format() function will work with
+            temp = [re.sub("<p>|<b>|</b>|\n|\t", "", s) for s in temp]
+            temp.insert(0, temp[1])
+            temp.pop(2)
+            screen = screen + temp
+            find = True
+
+    if not find:
+        raise Exception("Invalid Input")
+
+    # Then we run the list through a formatter, and that becomes our new list
+    challengeName = screen[0].split("> ")[1]
+    print(challengeName)
+    return format(screen, challengeName)
+
+"""
+In dev
+def researchSearch(res):
+
+    nawLink = "http://musicfamily.org/realm/Researchtree/"
+    content = requests.get(nawLink)
+    soup = BeautifulSoup(content.content, 'html5lib')
+
+    p = soup.find_all('map')
+    screen = []
+
+    for tag in p:
+        if res in tag['href']:
+            print(tag)
+            #temp = tag['research'].split()
+            # The following is to convert tag['research'] into a format that the format() function will work with
+            #temp = [re.sub("<p>|<b>|</b>|\n|\t", "", s) for s in temp]
+            #screen = screen + temp
+"""
 
 class Notawiki(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["upg", "u", "up"])
+    @commands.command(aliases=alias["upgrade"])
     @commands.guild_only()
-    async def upgrade(self, ctx, arg = None, number = None):
-        """Searches a Faction Upgrade from Not-a-Wiki"""
+    async def upgrade(self, ctx, arg=None, number=None):
+        """Retrieves information of a Faction Upgrade from Not-a-Wiki"""
         global color
         global faction
 
+        # basic Help command
         if (arg is None and number is None) or (arg == "help" and number is None):
-            description = "**.upgrade <faction>**\n**Aliases: **upg, up, u\n\nRetrieves a Faction upgrade information " \
+            description = "**.upgrade <faction>**\n**Aliases: **" + ', '.join(alias["upgrade"]) + \
+                          "\n\nRetrieves a Faction upgrade information " \
                           "directly from Not-a-Wiki. <faction> inputs can be using two-letter Mercenary Template with " \
                           "upgrade number, or full Faction name with an upgrade number.\n\nExamples: Fairy 7, MK10 "
-            embed = discord.Embed(title=":recycle:  Upgrade", description=description, colour=discord.Colour.dark_gold())
+            embed = discord.Embed(title=":recycle:  Upgrade", description=description,
+                                  colour=discord.Colour.dark_gold())
             return await ctx.send(embed=embed)
 
         # Checking if input returns an abbreviation faction i.e. FR7 or MK11, also accepts lowercase inputs
@@ -163,10 +227,89 @@ class Notawiki(commands.Cog):
     async def upgrade_error(self, ctx, error):
         if isinstance(error, Exception):
             title = " :exclamation:  Command Error!"
-            description="The parameters you used are not found in the list. Please try again."
+            description = "The parameters you used are not found in the list. Please try again."
             embed = discord.Embed(title=title, description=description, colour=discord.Colour.red())
             return await ctx.send(embed=embed)
 
+    @commands.command(aliases=alias["challenge"])
+    @commands.guild_only()
+    async def challenge(self, ctx, arg=None, number=None):
+        """Retrieves information of a Faction Challenge from Not-a-Wiki"""
+        global color
+        global faction
+
+        # Help panel in case of no input
+        if (arg is None and number is None) or (arg == "help" and number is None):
+            description = "**.challenge <faction>**\n**Aliases: **" + ', '.join(alias["challenge"]) + "\n\nRetrieves a " \
+                        "Faction Challenge information directly from Not-a-Wiki. <faction> inputs can be using " \
+                        "two-letter Faction abbreviation (like for Mercenary templates) with " \
+                        "challenge number, or full Faction name with a challenge number.\n\nExamples: Fairy 3, DG6 "
+            embed = discord.Embed(title=":recycle:  Challenge", description=description, colour=discord.Colour.dark_gold())
+            return await ctx.send(embed=embed)
+
+        # Checking if input returns an abbreviation faction i.e. FRC2 or MKC5, also accepts lowercase inputs
+        if arg[2].isdigit() or arg[2] in ["R", "r"] and number is None:
+            faction = arg.upper()
+            argColor = faction[0:2]
+            color = FactionUpgrades.getFactionColour(argColor)
+            # No huge dictionary this time around
+            faction2 = FactionUpgrades.getFactionNameFull(argColor)
+
+            faction = faction2 + faction[0] + "C" + faction[2:]
+
+        # if number is added as an input, we automatically assume the full term, i.e. "Fairy 7"
+        elif number is not None:
+            # Number checker has been moved to factionChallengeSearch()
+            arg2 = arg.lower()
+            arg2 = arg2.capitalize()
+            checks, fac, color = FactionUpgrades.getFactionAbbr(arg2)
+
+            # checks is retrieved from FactionUpgrades, if the term is not in dictionary it returns False and we
+            # raise Exception error
+            if checks is False:
+                raise Exception('Invalid Input')
+            else:
+                faction = arg2 + arg2[0] + "C" + str(number).upper()
+
+        # if inputs match neither above, raise Exception
+        else:
+            raise Exception('Invalid Input')
+
+        async with ctx.channel.typing():
+            # We get our list through Not-a-Wiki Beautiful Soup search
+            # factionChallengeSearch takes parameters like "FairyFC1" or "FacelessFC1" (note the similar last 3 characters)
+            data = factionChallengeSearch(faction)
+
+            ignore = 4
+
+            # Embed things, using the list retrieved from factionChallengeSearch
+            thumbnail = data[0]
+            # Spell rewards need special formatting
+            if faction[-1:] == "R":
+                title = f'**{data[1]}**'
+                ignore = 3
+            else:
+                title = f'**{data[2]} : {data[1]}**'
+            embed = discord.Embed(title=title, colour=discord.Colour(color), timestamp=datetime.datetime.utcnow())
+            embed.set_footer(text="http://musicfamily.org/realm/FactionUpgrades/",
+                             icon_url="http://musicfamily.org/realm/Factions/picks/RealmGrinderGameRL.png")
+            embed.set_thumbnail(url=thumbnail)
+
+            # Ignore the first 4 fields and create the rest
+            for line in data[ignore:]:
+                newline = line.split(": ")
+                first = f'**{newline[0]}**'
+                embed.add_field(name=first, value=newline[1], inline=True)
+
+        await ctx.send(embed=embed)
+
+    @challenge.error
+    async def challenge_error(self, ctx, error):
+        if isinstance(error, Exception):
+            title = " :exclamation:  Command Error!"
+            description = "The parameters you used are not found in the list. Please try again."
+            embed = discord.Embed(title=title, description=description, colour=discord.Colour.red())
+            return await ctx.send(embed=embed)
 
 ####
 def setup(bot):
