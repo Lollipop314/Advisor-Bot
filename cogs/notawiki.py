@@ -42,7 +42,7 @@ def format(lst: list, factionUpgrade):
             lst.remove(line)
 
         # Notes are not really important for the embed
-        if line.startswith("Note"):
+        if line.startswith("Note") or line.startswith("Tip"):
             lst.remove(line)
 
     # A little extra for Djinn 8 - show current UTC time and odd/even day
@@ -131,7 +131,6 @@ def factionChallengeSearch(faction):
 
     # Then we run the list through a formatter, and that becomes our new list
     challengeName = screen[0].split("> ")[1]
-    print(challengeName)
     return format(screen, challengeName)
 
 """
