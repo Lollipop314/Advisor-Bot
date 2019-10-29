@@ -158,7 +158,6 @@ class Notawiki(commands.Cog):
         self.bot = bot
 
     @commands.command(aliases=alias["upgrade"])
-    @commands.guild_only()
     async def upgrade(self, ctx, arg=None, number=None):
         """Retrieves information of a Faction Upgrade from Not-a-Wiki"""
         global color
@@ -231,7 +230,6 @@ class Notawiki(commands.Cog):
             return await ctx.send(embed=embed)
 
     @commands.command(aliases=alias["challenge"])
-    @commands.guild_only()
     async def challenge(self, ctx, arg=None, number=None):
         """Retrieves information of a Faction Challenge from Not-a-Wiki"""
         global color
