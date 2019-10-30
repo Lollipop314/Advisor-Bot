@@ -136,17 +136,23 @@ def factionChallengeSearch(faction):
     return format(screen, challengeName)
 
 def researchSearch(res):
+    # Yummy soup stuff
     nawLink = "http://musicfamily.org/realm/Researchtree/"
     content = requests.get(nawLink)
     soup = BeautifulSoup(content.content, 'html5lib')
 
+    # Researches begin using area, so we get all of them directly here
     p = soup.find_all('area')
 
     for tag in p:
+        # Adding a space at the end avoids jumping checks like "S1" and "S10" for example due to startswith() function
         if tag['research'].startswith(res + " "):
-            print(tag)
+            # Splitting into a list. We want it to look as below:
+            # <shorthand>, <for Faction>, <research Name>, <Requirements (optional)>, <Cost>, <Effect>
             temp = re.split('\ \-\ |Research\ Name:|<p>|\ <p>|<p>\ |\ <p> ' , tag['research'])
+            break
 
+    # Bad strings are bad
     for line in temp:
         if line in badSubstrings:
             temp.remove(line)
@@ -222,14 +228,6 @@ class Notawiki(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @upgrade.error
-    async def upgrade_error(self, ctx, error):
-        if isinstance(error, Exception):
-            title = " :exclamation:  Command Error!"
-            description = "The parameters you used are not found in the list. Please try again."
-            embed = discord.Embed(title=title, description=description, colour=discord.Colour.red())
-            return await ctx.send(embed=embed)
-
     @commands.command(aliases=alias["challenge"])
     async def challenge(self, ctx, arg=None, number=None):
         """Retrieves information of a Faction Challenge from Not-a-Wiki"""
@@ -302,19 +300,12 @@ class Notawiki(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @challenge.error
-    async def challenge_error(self, ctx, error):
-        if isinstance(error, Exception):
-            title = " :exclamation:  Command Error!"
-            description = "The parameters you used are not found in the list. Please try again."
-            embed = discord.Embed(title=title, description=description, colour=discord.Colour.red())
-            return await ctx.send(embed=embed)
-
     @commands.command(aliases=alias["research"])
     async def research(self, ctx, researchName=None):
         """Retrieves Research upgrade from Not-a-Wiki"""
         global image
 
+        # Help command
         if researchName is None or researchName == "help":
             description = "**.research <research>**\n**Aliases: **" + ', '.join(alias["research"]) + "\n\nRetrieves the " \
                     "Research info from Not-a-Wiki in an embed displaying name, cost, formula, and effect." \
@@ -323,9 +314,12 @@ class Notawiki(commands.Cog):
             embed = discord.Embed(title=f"{emoji}  Research", description=description, colour=discord.Colour.dark_green())
             return await ctx.send(embed=embed)
 
+        # Capitalizing researchName, adding check and importing the research dict
         researchName = researchName.upper()
         check = False
         rbranch = FactionUpgrades.getResearchBranch()
+
+        # Checks if first letter is an alphabet and the input after 0th index are digits
         if researchName[0].isalpha() and researchName[1:].isdigit():
             for key,value in rbranch.items():
                 if key[0] == researchName[0]:
@@ -338,25 +332,31 @@ class Notawiki(commands.Cog):
         async with ctx.channel.typing():
             data = researchSearch(researchName)
 
+            # data[0] and data[2] returns the shorthand research and the name of research
             title = f'{data[0]} - {data[2]}'
+
+            # mostly "For x factions"
             description = data[1]
 
             embed = discord.Embed(title=title, description=description, colour=discord.Colour.dark_green())
             embed.set_footer(text="http://musicfamily.org/realm/Researchtree/",
                              icon_url="http://musicfamily.org/realm/Factions/picks/RealmGrinderGameRL.png")
             embed.set_thumbnail(url=image)
+
+            # Cleaning the list a little, removing white spaces and also </p> that the re.compile didn't catch
             for line in data[3:]:
                 line = line.strip()
                 if line.endswith("</p>"):
                     line = line.replace("</p>", "")
                 newLine = line.split(": ")
-                first = f'**{newLine[0]}**'
-                embed.add_field(name=first, value=newLine[1], inline=True)
+                embed.add_field(name=f'**{newLine[0]}**', value=newLine[1], inline=True)
 
         await ctx.send(embed=embed)
 
+    @upgrade.error
+    @challenge.error
     @research.error
-    async def research_error(self, ctx, error):
+    async def universal_error(self, ctx, error):
         if isinstance(error, Exception):
             title = " :exclamation:  Command Error!"
             description = "The parameters you used are not found in the list. Please try again."
