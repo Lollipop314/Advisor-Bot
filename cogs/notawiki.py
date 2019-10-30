@@ -313,6 +313,7 @@ class Notawiki(commands.Cog):
     @commands.command(aliases=alias["research"])
     async def research(self, ctx, researchName=None):
         """Retrieves Research upgrade from Not-a-Wiki"""
+        global image
 
         if researchName is None or researchName == "help":
             description = "**.research <research>**\n**Aliases: **" + ', '.join(alias["research"]) + "\n\nRetrieves the " \
@@ -324,9 +325,9 @@ class Notawiki(commands.Cog):
 
         researchName = researchName.upper()
         check = False
-        dict = FactionUpgrades.getResearchBranch()
+        rbranch = FactionUpgrades.getResearchBranch()
         if researchName[0].isalpha() and researchName[1:].isdigit():
-            for key,value in dict.items():
+            for key,value in rbranch.items():
                 if key[0] == researchName[0]:
                     image = value
                     check = True
@@ -343,14 +344,24 @@ class Notawiki(commands.Cog):
             embed = discord.Embed(title=title, description=description, colour=discord.Colour.dark_green())
             embed.set_footer(text="http://musicfamily.org/realm/Researchtree/",
                              icon_url="http://musicfamily.org/realm/Factions/picks/RealmGrinderGameRL.png")
-            embed.set_thumbnail(image)
+            embed.set_thumbnail(url=image)
             for line in data[3:]:
                 line = line.strip()
+                if line.endswith("</p>"):
+                    line = line.replace("</p>", "")
                 newLine = line.split(": ")
                 first = f'**{newLine[0]}**'
                 embed.add_field(name=first, value=newLine[1], inline=True)
 
-            await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
+
+    @research.error
+    async def research_error(self, ctx, error):
+        if isinstance(error, Exception):
+            title = " :exclamation:  Command Error!"
+            description = "The parameters you used are not found in the list. Please try again."
+            embed = discord.Embed(title=title, description=description, colour=discord.Colour.red())
+            return await ctx.send(embed=embed)
 
 ####
 def setup(bot):
