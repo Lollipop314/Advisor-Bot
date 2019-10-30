@@ -230,12 +230,12 @@ factionUpgradesDict = {
 }
 
 researchBranchesdict = {
-    "Spellcraft": "http://musicfamily.org/realm/Spellcraft/",
-    "Craftsmanship": "http://musicfamily.org/realm/Craftsmanship/",
-    "Divine": "http://musicfamily.org/realm/Divine/",
-    "Economics": "http://musicfamily.org/realm/Economics/",
-    "Alchemy": "http://musicfamily.org/realm/Alchemy/",
-    "Warfare": "http://musicfamily.org/realm/Warfare/"
+    "Spellcraft": "http://musicfamily.org/realm/Factions/picks/Spellcraftr.png",
+    "Craftsmanship": "http://musicfamily.org/realm/Factions/picks/Craftsmanshipr.png",
+    "Divine": "http://musicfamily.org/realm/Factions/picks/Diviner.png",
+    "Economics": "http://musicfamily.org/realm/Factions/picks/Economicsr.png",
+    "Alchemy": "http://musicfamily.org/realm/Factions/picks/Alchemyr.png",
+    "Warfare": "http://musicfamily.org/realm/Factions/picks/Warfarer.png"
 }
 
 
@@ -278,3 +278,6 @@ def getFactionNameFull(faction):
 
     if not checks:
         return None
+
+def getResearchBranch():
+    return researchBranchesdict

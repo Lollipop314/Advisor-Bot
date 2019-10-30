@@ -16,7 +16,7 @@ alias = {
     "challenge": ["ch", "c"]
 }
 
-def format(lst: list, factionUpgrade):
+def format(lst: list, factionUpgrade=None):
     """Formats the list retrieved from BeautifulSoup"""
 
     # First line always return an url - we want to get the URL only for the thumbnail
@@ -27,7 +27,8 @@ def format(lst: list, factionUpgrade):
     lst.insert(0, newUrl[0])
 
     # We add the faction upgrade name to the list so embed can refer to this
-    lst.insert(1, factionUpgrade)
+    if factionUpgrade is not None:
+        lst.insert(1, factionUpgrade)
 
     # For 10-12 upgrades, we want Cost to be first after Requirement, to look nice in Embed
     if lst[3].startswith('Requirement'):
@@ -133,25 +134,24 @@ def factionChallengeSearch(faction):
     challengeName = screen[0].split("> ")[1]
     return format(screen, challengeName)
 
-"""
-In dev
 def researchSearch(res):
-
     nawLink = "http://musicfamily.org/realm/Researchtree/"
     content = requests.get(nawLink)
     soup = BeautifulSoup(content.content, 'html5lib')
 
-    p = soup.find_all('map')
+    p = soup.find_all('area')
     screen = []
 
     for tag in p:
-        if res in tag['href']:
+        if tag['research'].startswith(res + " "):
             print(tag)
-            #temp = tag['research'].split()
-            # The following is to convert tag['research'] into a format that the format() function will work with
-            #temp = [re.sub("<p>|<b>|</b>|\n|\t", "", s) for s in temp]
-            #screen = screen + temp
-"""
+            temp = re.split('\ \-\ |Research\ Name:|<p>|\ <p>|<p>\ |\ <p> ' , tag['research'])
+
+    for line in temp:
+        if line in badSubstrings:
+            temp.remove(line)
+
+    return temp
 
 class Notawiki(commands.Cog):
     def __init__(self, bot):
@@ -165,11 +165,12 @@ class Notawiki(commands.Cog):
 
         # basic Help command
         if (arg is None and number is None) or (arg == "help" and number is None):
+            emoji = discord.utils.get(ctx.guild.emojis, name="SuggestionMaster")
             description = "**.upgrade <faction>**\n**Aliases: **" + ', '.join(alias["upgrade"]) + \
                           "\n\nRetrieves a Faction upgrade information " \
                           "directly from Not-a-Wiki. <faction> inputs can be using two-letter Mercenary Template with " \
                           "upgrade number, or full Faction name with an upgrade number.\n\nExamples: Fairy 7, MK10 "
-            embed = discord.Embed(title=":recycle:  Upgrade", description=description,
+            embed = discord.Embed(title=f"{emoji}  Upgrade", description=description,
                                   colour=discord.Colour.dark_gold())
             return await ctx.send(embed=embed)
 
@@ -237,11 +238,12 @@ class Notawiki(commands.Cog):
 
         # Help panel in case of no input
         if (arg is None and number is None) or (arg == "help" and number is None):
+            emoji = discord.utils.get(ctx.guild.emojis, name="SuggestionMaster")
             description = "**.challenge <faction>**\n**Aliases: **" + ', '.join(alias["challenge"]) + "\n\nRetrieves a " \
                         "Faction Challenge information directly from Not-a-Wiki. <faction> inputs can be using " \
                         "two-letter Faction abbreviation (like for Mercenary templates) with " \
                         "challenge number, or full Faction name with a challenge number.\n\nExamples: Fairy 3, DG6 "
-            embed = discord.Embed(title=":recycle:  Challenge", description=description, colour=discord.Colour.dark_gold())
+            embed = discord.Embed(title=f"{emoji}  Challenge", description=description, colour=discord.Colour.dark_gold())
             return await ctx.send(embed=embed)
 
         # Checking if input returns an abbreviation faction i.e. FRC2 or MKC5, also accepts lowercase inputs
@@ -288,7 +290,7 @@ class Notawiki(commands.Cog):
             else:
                 title = f'**{data[2]} : {data[1]}**'
             embed = discord.Embed(title=title, colour=discord.Colour(color), timestamp=datetime.datetime.utcnow())
-            embed.set_footer(text="http://musicfamily.org/realm/FactionUpgrades/",
+            embed.set_footer(text="http://musicfamily.org/realm/Challenges/",
                              icon_url="http://musicfamily.org/realm/Factions/picks/RealmGrinderGameRL.png")
             embed.set_thumbnail(url=thumbnail)
 
@@ -307,6 +309,13 @@ class Notawiki(commands.Cog):
             description = "The parameters you used are not found in the list. Please try again."
             embed = discord.Embed(title=title, description=description, colour=discord.Colour.red())
             return await ctx.send(embed=embed)
+
+    @commands.command()
+    async def research(self, ctx, researchName=None):
+        """Retrieves Research upgrade from Not-a-Wiki"""
+
+        if researchName is (None or "help"):
+            pass
 
 ####
 def setup(bot):
