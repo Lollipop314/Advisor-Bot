@@ -13,7 +13,8 @@ badSubstrings = ["", "Cost", "Effect", "Formula", "Mercenary Template", "Require
 
 alias = {
     "upgrade": ["upg", "up", "u"],
-    "challenge": ["ch", "c"]
+    "challenge": ["ch", "c"],
+    "research": ["r", "res"]
 }
 
 def format(lst: list, factionUpgrade=None):
@@ -140,7 +141,6 @@ def researchSearch(res):
     soup = BeautifulSoup(content.content, 'html5lib')
 
     p = soup.find_all('area')
-    screen = []
 
     for tag in p:
         if tag['research'].startswith(res + " "):
@@ -310,12 +310,47 @@ class Notawiki(commands.Cog):
             embed = discord.Embed(title=title, description=description, colour=discord.Colour.red())
             return await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(aliases=alias["research"])
     async def research(self, ctx, researchName=None):
         """Retrieves Research upgrade from Not-a-Wiki"""
 
-        if researchName is (None or "help"):
-            pass
+        if researchName is None or researchName == "help":
+            description = "**.research <research>**\n**Aliases: **" + ', '.join(alias["research"]) + "\n\nRetrieves the " \
+                    "Research info from Not-a-Wiki in an embed displaying name, cost, formula, and effect." \
+                    "\n\nAcceptable inputs are only using research branch + number (i.e. S10, C340, E400)."
+            emoji = discord.utils.get(ctx.guild.emojis, name="SuggestionMaster")
+            embed = discord.Embed(title=f"{emoji}  Research", description=description, colour=discord.Colour.dark_green())
+            return await ctx.send(embed=embed)
+
+        researchName = researchName.upper()
+        check = False
+        dict = FactionUpgrades.getResearchBranch()
+        if researchName[0].isalpha() and researchName[1:].isdigit():
+            for key,value in dict.items():
+                if key[0] == researchName[0]:
+                    image = value
+                    check = True
+
+        if not check:
+            raise Exception("Invalid Input")
+
+        async with ctx.channel.typing():
+            data = researchSearch(researchName)
+
+            title = f'{data[0]} - {data[2]}'
+            description = data[1]
+
+            embed = discord.Embed(title=title, description=description, colour=discord.Colour.dark_green())
+            embed.set_footer(text="http://musicfamily.org/realm/Researchtree/",
+                             icon_url="http://musicfamily.org/realm/Factions/picks/RealmGrinderGameRL.png")
+            embed.set_thumbnail(image)
+            for line in data[3:]:
+                line = line.strip()
+                newLine = line.split(": ")
+                first = f'**{newLine[0]}**'
+                embed.add_field(name=first, value=newLine[1], inline=True)
+
+            await ctx.send(embed=embed)
 
 ####
 def setup(bot):

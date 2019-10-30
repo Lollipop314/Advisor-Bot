@@ -279,5 +279,6 @@ def getFactionNameFull(faction):
     if not checks:
         return None
 
+
 def getResearchBranch():
     return researchBranchesdict
