@@ -237,10 +237,10 @@ class Notawiki(commands.Cog):
         # Help panel in case of no input
         if (arg is None and number is None) or (arg == "help" and number is None):
             emoji = discord.utils.get(ctx.guild.emojis, name="SuggestionMaster")
-            description = "**.challenge <faction>**\n**Aliases: **" + ', '.join(alias["challenge"]) + "\n\nRetrieves a " \
-                        "Faction Challenge information directly from Not-a-Wiki. <faction> inputs can be using " \
-                        "two-letter Faction abbreviation (like for Mercenary templates) with " \
-                        "challenge number, or full Faction name with a challenge number.\n\nExamples: Fairy 3, DG6 "
+            description = "**.challenge <faction>**\n**Aliases: **" + ', '.join(alias["challenge"]) + "\n\nRetrieves " \
+                        "challenge info from Not-a-Wiki displaying name, requirements, effects, and formulas. Valid " \
+                        "inputs include using faction name and the challenge number, or r for spell challenge " \
+                        "reward.\n\nExample: Fairy 2, Makers r"
             embed = discord.Embed(title=f"{emoji}  Challenge", description=description, colour=discord.Colour.dark_gold())
             return await ctx.send(embed=embed)
 
