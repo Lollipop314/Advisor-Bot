@@ -63,8 +63,6 @@ def format(lst: list, factionUpgrade=None):
     if factionUpgrade == "Primal Balance":
         lst.pop(5)
 
-    print(lst)
-
     return lst
 
 
@@ -244,8 +242,10 @@ class Notawiki(commands.Cog):
             embed = discord.Embed(title=f"{emoji}  Challenge", description=description, colour=discord.Colour.dark_gold())
             return await ctx.send(embed=embed)
 
-        # Checking if input returns an abbreviation faction i.e. FRC2 or MKC5, also accepts lowercase inputs
-        if arg[2].isdigit() or arg[2] in ["R", "r"] and number is None:
+        # Checking if input returns an abbreviation faction i.e. FR2 or MK5, also accepts lowercase inputs
+        if arg[2].isdigit() or arg[2] in ["R", "r", "C", "c"] and number is None:
+            if arg[2] in ["C", "c"]:
+                arg = arg[:2] + arg[3:]
             faction = arg.upper()
             argColor = faction[0:2]
             color = FactionUpgrades.getFactionColour(argColor)
